@@ -5,14 +5,27 @@ package timer
  * that is both RoboRIO and PC friendly! (and is in Kotlin)
  *
  * To do so, it relies on `System.currentTimeMillis`. If you're writing
- * code for a robot and need an accuracy of microseconds for some reason
+ * code for a RoboRIO and need an accuracy of microseconds for some reason
  * (maybe things moving really fast?) use WPIlib's timer instead, it
  * relies on `RobotController.getFPGATimeStamp`.
  */
 class Timer() {
-    private var startTimeMillis = 0L
+    private var startTimeMillis: Long? = null
     private var accumulatedTimeMillis = 0L
     private var running = false
+
+    var millis = 0L
+        get() {
+            if(startTimeMillis == null) return 0L
+            return if(running) {
+                (System.currentTimeMillis() - startTimeMillis!!) + accumulatedTimeMillis
+            } else accumulatedTimeMillis
+        }
+        private set
+
+    var seconds = 0.0
+        get() = (millis / 1000).toDouble()
+        private set
 
     /**
      * Starts the timer if it isn't running already.
@@ -23,14 +36,6 @@ class Timer() {
             running = true
         }
     }
-
-    fun getMillis(): Long {
-        return if(running) {
-            System.currentTimeMillis() - startTimeMillis + accumulatedTimeMillis
-        } else accumulatedTimeMillis
-    }
-
-    fun getSeconds(): Double = getMillis().toDouble()
 
     fun reset() {
         startTimeMillis = System.currentTimeMillis()
@@ -52,12 +57,12 @@ class Timer() {
      */
     fun stop() {
         if(running) {
+            accumulatedTimeMillis = millis
             running = false
-            accumulatedTimeMillis = getMillis()
         }
     }
 
-    fun hasElapsed(millis: Long) = getMillis() >= millis
+    fun hasElapsed(millis: Long) = this.millis >= millis
 
-    fun hasElapsed(millis: Double) = getMillis().toDouble() >= millis
+    fun hasElapsed(millis: Double) = this.millis.toDouble() >= millis
 }
